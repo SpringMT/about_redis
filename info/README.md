@@ -35,9 +35,9 @@ process_id | 38293 | getpid(2) https://linuxjm.osdn.jp/html/LDP_man-pages/man2/g
 process_supervised | no | suprvisedの仕組み https://github.com/redis/redis/blob/17511df59b96bfeab8b46d474c19ec929e605bb9/src/server.c#L4644-L4650
 run_id | 171825293c57aa676e943d31ca4ee6632cb865c9 | サーバーを一意に識別するID sentinelやclusterで使う https://github.com/redis/redis/blob/17511df59b96bfeab8b46d474c19ec929e605bb9/src/server.c#L2637
 tcp_port | 6379 | サーバーのTCP/IPのポート https://github.com/redis/redis/blob/17511df59b96bfeab8b46d474c19ec929e605bb9/src/server.c#L3202-L3211
-server_time_usec | 1627283878649452 | 
-uptime_in_seconds | 3746 |
-uptime_in_days | 0 |
+server_time_usec | 1627283878649452 | マイクロ秒単位のUnixタイム https://github.com/redis/redis/blob/17511df59b96bfeab8b46d474c19ec929e605bb9/src/server.c#L1224-L1233
+uptime_in_seconds | 3746 | redisサーバーの起動時間(秒) https://github.com/redis/redis/blob/17511df59b96bfeab8b46d474c19ec929e605bb9/src/server.c#L4621
+uptime_in_days | 0 | redisサーバーの起動時間(日) uptime_in_seconds を 24 * 3600で割った数
 hz | 10 |
 configured_hz | 10 |
 lru_clock | 16671142 |
