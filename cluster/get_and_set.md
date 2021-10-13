@@ -55,4 +55,114 @@ _{.._{..
 (integer) 12364
 ```
 
-hash slotの計算結果、
+hash slotの計算結果、別nodeに格納するべきkeyであることがわかる。
+
+ここで redis-cliを `-c` optionを付けて実行し、どのようになるかを観察する。
+
+```
+127.0.0.1:30001> set sample2 1
+-> Redirected to slot [12364] located at 127.0.0.1:30003
+OK
+127.0.0.1:30003> 
+```
+
+SETするkeyが別Nodeであることがわかると、redirectされ、cliは別portにアクセスしなおされる。
+
+(30001 portへのTCP接続は一旦切って30003 portのnodeに対してconnectする)
+
+その上で、SETがあらためて実装され完了する。
+
+```
+23:02:10.782776 IP localhost.60869 > localhost.pago-services1: Flags [P.], seq 18:51, ack 63451, win 5398, options [nop,nop,TS val 1602785507 ecr 1602770854], length 33
+E..U..@...............u1p.hbh........I.....
+_..._.W.*3
+$3
+set
+$7
+sample2
+$1
+1
+
+23:02:10.782841 IP localhost.pago-services1 > localhost.60869: Flags [.], ack 51, win 6378, options [nop,nop,TS val 1602785507 ecr 1602785507], length 0
+E..4..@.............u1..h...p.h......(.....
+_..._...
+23:02:10.783020 IP localhost.pago-services1 > localhost.60869: Flags [P.], seq 63451:63481, ack 51, win 6378, options [nop,nop,TS val 1602785508 ecr 1602785507], length 30
+E..R..@.............u1..h...p.h......F.....
+_..._...-MOVED 12364 127.0.0.1:30003
+
+23:02:10.783058 IP localhost.60869 > localhost.pago-services1: Flags [.], ack 63481, win 5397, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@...............u1p.h.h..=.....(.....
+_..._...
+23:02:10.783198 IP localhost.60869 > localhost.pago-services1: Flags [F.], seq 51, ack 63481, win 5397, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@...............u1p.h.h..=.....(.....
+_..._...
+23:02:10.783243 IP localhost.pago-services1 > localhost.60869: Flags [.], ack 52, win 6378, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@.............u1..h..=p.h......(.....
+_..._...
+23:02:10.783331 IP localhost.pago-services1 > localhost.60869: Flags [F.], seq 63481, ack 52, win 6378, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@.............u1..h..=p.h......(.....
+_..._...
+23:02:10.783549 IP localhost.60869 > localhost.pago-services1: Flags [.], ack 63482, win 5397, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@...............u1p.h.h..>.....(.....
+_..._...
+23:02:10.783656 IP localhost.60882 > localhost.30003: Flags [S], seq 3032706570, win 65535, options [mss 16344,nop,wscale 6,nop,nop,TS val 1602785508 ecr 0,sackOK,eol], length 0
+E..@..@...............u3..n
+.........4....?........
+_...........
+23:02:10.783892 IP localhost.30003 > localhost.60882: Flags [S.], seq 797791088, ack 3032706571, win 65535, options [mss 16344,nop,wscale 6,nop,nop,TS val 1602785508 ecr 1602785508,sackOK,eol], length 0
+E..@..@.............u3../.Sp..n......4....?........
+_..._.......
+23:02:10.783916 IP localhost.60882 > localhost.30003: Flags [.], ack 1, win 6379, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@...............u3..n./.Sq.....(.....
+_..._...
+23:02:10.783932 IP localhost.30003 > localhost.60882: Flags [.], ack 1, win 6379, options [nop,nop,TS val 1602785508 ecr 1602785508], length 0
+E..4..@.............u3../.Sq..n......(.....
+_..._...
+23:02:10.784105 IP localhost.60882 > localhost.30003: Flags [P.], seq 1:34, ack 1, win 6379, options [nop,nop,TS val 1602785509 ecr 1602785508], length 33
+E..U..@...............u3..n./.Sq.....I.....
+_..._...*3
+$3
+set
+$7
+sample2
+$1
+1
+
+23:02:10.784151 IP localhost.30003 > localhost.60882: Flags [.], ack 34, win 6379, options [nop,nop,TS val 1602785509 ecr 1602785509], length 0
+E..4..@.............u3../.Sq..n,.....(.....
+_..._...
+23:02:10.785926 IP localhost.30003 > localhost.60882: Flags [P.], seq 1:6, ack 34, win 6379, options [nop,nop,TS val 1602785510 ecr 1602785509], length 5
+E..9..@.............u3../.Sq..n,.....-.....
+_..._...+OK
+```
+
+## replicaにアクセスしてみる
+
+```
+127.0.0.1:30005> get sample1
+(error) MOVED 47 127.0.0.1:30001
+127.0.0.1:30005> READONLY
+OK
+127.0.0.1:30005> get sample1
+"1"
+```
+
+slaveへのアクセスは予めREADONLYが必要となる
+
+```
+% ./redis/redis/src/redis-cli -c -p 30005
+127.0.0.1:30005> get sample1
+-> Redirected to slot [47] located at 127.0.0.1:30001
+"1"
+```
+clusterモードだとこれもredirectされる
+
+```
+127.0.0.1:30005> set sample1 2
+-> Redirected to slot [47] located at 127.0.0.1:30001
+OK
+```
+setであってもredirectされる
+
+
+
