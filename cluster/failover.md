@@ -7,9 +7,9 @@ b98eef26fb94dcf3a19d4c475636fed70707da75 127.0.0.1:30006@40006 slave 6bd86202397
 a1c349eb26143ed43b837f36ecdef9b0d784278d 127.0.0.1:30005@40005 myself,master - 0 1634135198000 7 connected 0-5460
 ```
 
-30001がslave 30005がmasterに対してアクセスしておく
+30001 portのnodeがslave 30005 portのnodeがmasterで、それぞれredis-cli経由でアクセスしておく
 
-30001
+30001はslave
 
 ```
 127.0.0.1:30001> READONLY
@@ -18,10 +18,14 @@ OK
 "2"
 ```
 
+30005はmaster
+
 ```
 127.0.0.1:30005> set sample1 2
 OK
 ```
+
+## failover実行
 
 30001でfailoverを引き起こす
 
@@ -29,6 +33,8 @@ OK
 127.0.0.1:30001> cluster failover
 OK
 ```
+
+30001 portのnodeがmasterへ、30005 portのnodeがslaveに切り替わる
 
 ```
 c7d6a21305906410839267e789c50b238eff942 127.0.0.1:30003@40003 master - 0 1634135590590 3 connected 10923-16383
@@ -58,4 +64,5 @@ OK
 OK
 ```
 
-30005はsetをうつがこの場合、masterのnodeへredirectされてSETが実行される
+30005はsetを売った場合、30001 portのnode　(master)へredirectされてSETが実行される。
+
